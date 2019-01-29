@@ -1855,6 +1855,56 @@ pander.polr <- function (x, ...) {
     invisible()
 }
 
+
+#' Prints an rq object from quantreg package in Pandoc's markdown.
+#' @param x an rq object
+#' @param caption An optional caption for the table of coefficients.
+#' @param AIC Logical. Whether to print the AIC of the fit below the table.
+#' @param ... optional parameters passed to raw \code{pandoc.table} function
+#' @export
+pander.rq <- function (x, caption=attr(x, "caption"), AIC=TRUE, ...) {
+    
+    pander.summary.rq(x, caption=caption, ...)
+    
+    if(AIC){
+        cat('AIC:', format(AIC(x), nsmall = 2L), '\n')
+    }
+    
+}
+
+#' Prints a summary of an rq object from quantreg package in Pandoc's markdown.
+#' @param x an summary.rq object
+#' @param ... optional parameters passed to raw \code{pandoc.table} function
+#' @export
+pander.summary.rq <- function (x, caption=attr(x, "caption"), ...) {
+    
+    if(is.null(caption)){
+        caption <- sprintf("Quantile regression (tau = %s): %s",
+                           x$tau,
+                           pandoc.formula.return(x$call$formula)
+        )
+    }
+    
+    coefs <- coef(x)
+    # If has columns, then has confidence interval
+    if(ncol(coefs)){
+        # Alpha level for confidence interval.
+        alpha <- as.list(x$call)$alpha
+        if(is.null(alpha))alpha <- 0.1
+        cov <- 100*(1 - alpha/2)
+        
+        colnames(coefs) <- c("Estimate", 
+                             sprintf("Lower (%s%%)", 100 - cov),
+                             sprintf("Upper (%s%%)", cov))
+    }
+    
+    pandoc.table(coefs, caption = caption, ...)
+
+
+}
+
+
+
 #' Prints an ols object from rms package in Pandoc's markdown.
 #' @param x an ols object
 #' @param long if to print the correlation matrix of parameter estimates. default(\code{FALSE})
